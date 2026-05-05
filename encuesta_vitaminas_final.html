@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Encuesta Vitaminas - Eureka 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Nunito', Arial, sans-serif;
+  background: #0b1120;
+  color: #f1f5f9;
+  min-height: 100vh;
+  padding: 0;
+}
+.wrap {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+
+/* BARRA PROGRESO */
+#prog {
+  display: none;
+  position: sticky;
+  top: 0;
+  background: #0b1120;
+  padding: 12px 0 10px;
+  z-index: 99;
+  border-bottom: 1px solid #1e293b;
+  margin-bottom: 16px;
+}
+.prog-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.prog-lbl { font-size: 12px; color: #64748b; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.prog-num { font-size: 13px; color: #F5C518; font-weight: 900; }
+.prog-track { height: 6px; background: #1e293b; border-radius: 99px; overflow: hidden; }
+.prog-fill { height: 100%; background: #F5C518; border-radius: 99px; transition: width 0.4s; }
+
+/* PANTALLAS */
+.screen { display: none; }
+.screen.activa { display: block; }
+
+/* PORTADA */
+.portada {
+  background: #111827;
+  border: 2px solid #2d3f55;
+  border-radius: 20px;
+  padding: 36px 24px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+.badge {
+  display: inline-block;
+  background: #F5C518;
+  color: #412402;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 4px 16px;
+  border-radius: 99px;
+  margin-bottom: 16px;
+}
+.portada h1 {
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.25;
+  margin-bottom: 12px;
+  color: #fff;
+}
+.portada p {
+  font-size: 14px;
+  color: #94a3b8;
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 24px; }
+.chip { background: #1e293b; border: 1px solid #2d3f55; color: #93c5fd; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 99px; }
+.chip.v { color: #86efac; }
+.chip.a { color: #fde68a; }
+
+/* BOTÓN PRINCIPAL */
+.btn-inicio {
+  background: #F5C518;
+  color: #412402;
+  font-family: 'Nunito', Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 900;
+  padding: 14px 40px;
+  border-radius: 99px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 24px rgba(245,197,24,0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn-inicio:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(245,197,24,0.5); }
+.btn-inicio:active { transform: translateY(0); }
+
+/* MINI INFO */
+.mini-info {
+  background: #111827;
+  border: 2px solid #2d3f55;
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 12px;
+}
+.mini-titulo { font-size: 12px; font-weight: 900; color: #F5C518; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+.mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mini-item { background: #0f1726; border-radius: 10px; padding: 14px 12px; text-align: center; }
+.mini-emoji { font-size: 28px; margin-bottom: 6px; }
+.mini-sub { font-size: 12px; font-weight: 700; color: #93c5fd; margin-bottom: 4px; }
+.mini-desc { font-size: 11px; color: #64748b; line-height: 1.4; }
+
+/* TARJETA PREGUNTA */
+.card {
+  background: #111827;
+  border-radius: 18px;
+  padding: 22px 20px;
+  margin-bottom: 14px;
+  border-top: 4px solid #F5C518;
+  border-left: 2px solid #2d3f55;
+  border-right: 2px solid #2d3f55;
+  border-bottom: 2px solid #2d3f55;
+}
+.card.verde { border-top-color: #10b981; }
+.card.azul  { border-top-color: #60a5fa; }
+.card.morado { border-top-color: #a78bfa; }
+
+.q-num { font-size: 11px; font-weight: 900; color: #F5C518; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+.card.verde .q-num  { color: #10b981; }
+.card.azul  .q-num  { color: #60a5fa; }
+.card.morado .q-num { color: #a78bfa; }
+
+.q-texto { font-size: 16px; font-weight: 800; line-height: 1.4; margin-bottom: 16px; }
+.q-hint  { font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+
+/* GRADO */
+.grade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grade-btn {
+  background: #1e293b;
+  border: 2px solid #2d3f55;
+  border-radius: 14px;
+  padding: 20px 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.18s;
+  user-select: none;
+}
+.grade-btn:hover { border-color: #F5C518; }
+.grade-btn.sel { border-color: #F5C518; background: #1a1200; }
+.grade-num { font-size: 38px; font-weight: 900; color: #64748b; margin-bottom: 4px; transition: color 0.18s; }
+.grade-btn.sel .grade-num { color: #F5C518; }
+.grade-lbl { font-size: 13px; color: #64748b; font-weight: 700; }
+.grade-btn.sel .grade-lbl { color: #F5C518; }
+
+/* INPUT */
+.inp-edad {
+  width: 100%;
+  background: #1e293b;
+  border: 2px solid #2d3f55;
+  border-radius: 12px;
+  padding: 13px 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #f1f5f9;
+  font-family: 'Nunito', Arial, sans-serif;
+  outline: none;
+  transition: border-color 0.18s;
+}
+.inp-edad:focus { border-color: #F5C518; }
+
+/* OPCIONES */
+.opts { display: flex; flex-direction: column; gap: 9px; }
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #1e293b;
+  border: 2px solid #2d3f55;
+  border-radius: 12px;
+  padding: 13px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+  transition: all 0.18s;
+  user-select: none;
+}
+.opt:hover { border-color: rgba(245,197,24,0.5); background: #1a2030; }
+.opt.sel { border-color: #F5C518; background: #1a1200; color: #F5C518; }
+.opt.sel-v { border-color: #10b981; background: #041f14; color: #6ee7b7; }
+
+.circulo {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid #2d3f55;
+  background: #0b1120;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s;
+  font-size: 10px;
+}
+.opt.sel .circulo { border-color: #F5C518; background: #F5C518; color: #412402; }
+.opt.sel-v .circulo { border-color: #10b981; background: #10b981; color: #fff; }
+
+.cuadro {
+  width: 20px; height: 20px; border-radius: 5px;
+  border: 2px solid #2d3f55;
+  background: #0b1120;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s;
+  font-size: 12px;
+  color: transparent;
+}
+.opt.sel-v .cuadro { border-color: #10b981; background: #10b981; color: #fff; }
+
+.emoji { font-size: 18px; flex-shrink: 0; }
+
+/* DATO VITAMINA */
+.dato {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: #0f172a;
+  border: 1px solid #1e3a5c;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 14px;
+}
+.dato-icono { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.dato-texto { font-size: 12px; color: #7dd3fc; line-height: 1.5; font-weight: 600; }
+.dato-texto b { color: #F5C518; }
+
+/* ALERTA */
+.alerta {
+  background: #1f0808;
+  border: 2px solid #ef4444;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fca5a5;
+  margin-top: 10px;
+  display: none;
+}
+.alerta.on { display: block; }
+
+/* NAVEGACIÓN */
+.nav {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.btn-atras {
+  background: #1e293b;
+  border: 2px solid #2d3f55;
+  color: #94a3b8;
+  font-family: 'Nunito', Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 11px 22px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-atras:hover { border-color: #F5C518; color: #F5C518; }
+.btn-siguiente {
+  background: #F5C518;
+  color: #412402;
+  border: none;
+  font-family: 'Nunito', Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+  padding: 11px 26px;
+  border-radius: 99px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(245,197,24,0.35);
+  transition: all 0.15s;
+}
+.btn-siguiente:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(245,197,24,0.5); }
+.btn-enviar {
+  background: #10b981;
+  color: #fff;
+  border: none;
+  font-family: 'Nunito', Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+  padding: 11px 26px;
+  border-radius: 99px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(16,185,129,0.35);
+  transition: all 0.15s;
+}
+.btn-enviar:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(16,185,129,0.5); }
+
+/* RESULTADOS */
+.res-hero {
+  background: #111827;
+  border: 2px solid #10b981;
+  border-radius: 20px;
+  padding: 32px 24px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+.res-emoji { font-size: 52px; display: block; margin-bottom: 12px; }
+.res-titulo { font-size: 24px; font-weight: 900; color: #10b981; margin-bottom: 6px; }
+.res-sub { font-size: 13px; color: #64748b; font-weight: 600; }
+.res-card {
+  background: #111827;
+  border: 2px solid #2d3f55;
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 12px;
+}
+.res-titulo-sec { font-size: 11px; font-weight: 900; color: #F5C518; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+.res-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #1e293b;
+  font-size: 13px;
+}
+.res-fila:last-child { border: none; }
+.res-q { color: #64748b; font-weight: 600; flex: 1; line-height: 1.4; }
+.res-a { font-weight: 800; text-align: right; max-width: 52%; line-height: 1.4; }
+.consejo {
+  background: #041f14;
+  border: 2px solid #10b981;
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.consejo-emoji { font-size: 24px; flex-shrink: 0; }
+.consejo-texto { font-size: 13px; color: #6ee7b7; line-height: 1.6; font-weight: 600; }
+.vits-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.vit-item {
+  background: #1e293b;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vit-badge {
+  width: 34px; height: 34px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 900; flex-shrink: 0;
+}
+.vit-desc { font-size: 11px; color: #64748b; line-height: 1.3; }
+.btn-nuevo {
+  width: 100%;
+  background: #1e293b;
+  border: 2px solid #2d3f55;
+  color: #f1f5f9;
+  font-family: 'Nunito', Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  padding: 13px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 4px;
+}
+.btn-nuevo:hover { border-color: #F5C518; color: #F5C518; }
+.footer { text-align: center; font-size: 11px; color: #475569; line-height: 1.7; margin-top: 20px; }
+
+@media (max-width: 480px) {
+  .nav { flex-direction: column-reverse; }
+  .btn-atras, .btn-siguiente, .btn-enviar { width: 100%; text-align: center; }
+  .vits-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- PROGRESO -->
+  <div id="prog">
+    <div class="prog-row">
+      <span class="prog-lbl" id="prog-lbl">Pregunta 1 de 7</span>
+      <span class="prog-num" id="prog-pct">0%</span>
+    </div>
+    <div class="prog-track">
+      <div class="prog-fill" id="prog-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- ══════ PORTADA ══════ -->
+  <div class="screen activa" id="p-inicio">
+    <div class="portada">
+      <div class="badge">Feria de Ciencias Eureka 2026</div>
+      <h1>🧠 ¿Lo que comes afecta tus notas?</h1>
+      <p>
+        Somos el <strong>Grupo 4 de 2.° B</strong> del I.E.P. Liceo Santo Domingo.<br>
+        Estamos investigando cómo las vitaminas afectan el rendimiento académico.<br><br>
+        Esta encuesta es <strong>100% anónima</strong> y solo toma <strong>3 minutos</strong>.
+      </p>
+      <div class="chips">
+        <span class="chip a">⏱ 3 minutos</span>
+        <span class="chip">📋 7 preguntas</span>
+        <span class="chip v">🔒 Anónima</span>
+      </div>
+      <button class="btn-inicio" onclick="iniciar()">Comenzar encuesta →</button>
+    </div>
+
+    <div class="mini-info">
+      <div class="mini-titulo">¿Por qué investigamos esto?</div>
+      <div class="mini-grid">
+        <div class="mini-item">
+          <div class="mini-emoji">😴</div>
+          <div class="mini-sub">Sin vitaminas</div>
+          <div class="mini-desc">El cerebro no puede concentrarse ni recordar bien</div>
+        </div>
+        <div class="mini-item">
+          <div class="mini-emoji">⚡</div>
+          <div class="mini-sub">Con vitaminas</div>
+          <div class="mini-desc">Mejor memoria, concentración y notas escolares</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Daniela Vásquez · Keyla Timo · Fabrizio Ponce<br>
+      Dastin Requena · María Cerda · Camila Occ
+    </div>
+  </div>
+
+  <!-- ══════ DATOS ══════ -->
+  <div class="screen" id="p-datos">
+    <div class="card">
+      <div class="q-num">DATOS PERSONALES</div>
+      <div class="q-texto">¿A qué grado perteneces?</div>
+      <div class="grade-grid">
+        <div class="grade-btn" id="gb2" onclick="elegirGrado('2do')">
+          <div class="grade-num">2°</div>
+          <div class="grade-lbl">Secundaria</div>
+        </div>
+        <div class="grade-btn" id="gb5" onclick="elegirGrado('5to')">
+          <div class="grade-num">5°</div>
+          <div class="grade-lbl">Secundaria</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="q-num">DATOS PERSONALES</div>
+      <div class="q-texto">¿Cuántos años tienes?</div>
+      <input class="inp-edad" id="edad" type="number" min="10" max="19" maxlength="2" oninput="if(this.value.length>2)this.value=this.value.slice(0,2)" placeholder="Ej: 14">
+    </div>
+    <div class="alerta" id="al-datos">⚠️ Selecciona tu grado e ingresa tu edad para continuar.</div>
+    <div class="nav">
+      <button class="btn-siguiente" onclick="valDatos()">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ══════ P1 ══════ -->
+  <div class="screen" id="p-q1">
+    <div class="card">
+      <div class="q-num">PREGUNTA 1 DE 7</div>
+      <div class="q-texto">¿Con qué frecuencia consumes frutas, verduras, carnes y lácteos?</div>
+      <div class="opts">
+        <div class="opt" onclick="elegir(this,'q1','Todos los días')">
+          <div class="circulo">✓</div><span class="emoji">🌟</span> Todos los días
+        </div>
+        <div class="opt" onclick="elegir(this,'q1','Interdiario')">
+          <div class="circulo">✓</div><span class="emoji">📅</span> Interdiario
+        </div>
+        <div class="opt" onclick="elegir(this,'q1','1 vez a la semana')">
+          <div class="circulo">✓</div><span class="emoji">📆</span> 1 vez a la semana
+        </div>
+        <div class="opt" onclick="elegir(this,'q1','Muy poco')">
+          <div class="circulo">✓</div><span class="emoji">😬</span> Muy poco
+        </div>
+      </div>
+      <div class="dato">
+        <span class="dato-icono">💡</span>
+        <span class="dato-texto"><b>¿Sabías?</b> Las frutas y verduras tienen vitaminas C, B9 y E — esenciales para que tu cerebro se concentre y recuerde en clase.</span>
+      </div>
+    </div>
+    <div class="alerta" id="al-q1">⚠️ Selecciona una opción para continuar.</div>
+    <div class="nav">
+      <button class="btn-atras" onclick="ir('p-q1','p-datos')">← Atrás</button>
+      <button class="btn-siguiente" onclick="valUno('q1','al-q1','p-q1','p-q2',28)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ══════ P2 ══════ -->
+  <div class="screen" id="p-q2">
+    <div class="card morado">
+      <div class="q-num">PREGUNTA 2 DE 7</div>
+      <div class="q-texto">Si consumes muy poco, ¿cuál es el motivo principal?</div>
+      <div class="q-hint">💬 Si antes elegiste diferente a "Muy poco", selecciona "No aplica".</div>
+      <div class="opts">
+        <div class="opt" onclick="elegir(this,'q2','No me gusta, lo evito')">
+          <div class="circulo">✓</div><span class="emoji">🙅</span> No me gusta, lo evito
+        </div>
+        <div class="opt" onclick="elegir(this,'q2','No es parte de mi dieta diaria')">
+          <div class="circulo">✓</div><span class="emoji">🍽️</span> No es parte de mi dieta
+        </div>
+        <div class="opt" onclick="elegir(this,'q2','Tengo una dieta especial')">
+          <div class="circulo">✓</div><span class="emoji">⚕️</span> Tengo una dieta especial
+        </div>
+        <div class="opt" onclick="elegir(this,'q2','Prefiero comida rápida o snacks')">
+          <div class="circulo">✓</div><span class="emoji">🍔</span> Prefiero comida rápida o snacks
+        </div>
+        <div class="opt" onclick="elegir(this,'q2','Falta de información')">
+          <div class="circulo">✓</div><span class="emoji">📚</span> Falta de información
+        </div>
+        <div class="opt" onclick="elegir(this,'q2','No aplica')">
+          <div class="circulo">✓</div><span class="emoji">✅</span> No aplica — consumo suficiente
+        </div>
+      </div>
+    </div>
+    <div class="alerta" id="al-q2">⚠️ Selecciona una opción para continuar.</div>
+    <div class="nav">
+      <button class="btn-atras" onclick="ir('p-q2','p-q1')">← Atrás</button>
+      <button class="btn-siguiente" onclick="valUno('q2','al-q2','p-q2','p-q3',42)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ══════ P3 — CHECKBOX ══════ -->
+  <div class="screen" id="p-q3">
+    <div class="card verde">
+      <div class="q-num">PREGUNTA 3 DE 7</div>
+      <div class="q-texto">Marca los alimentos que forman parte de tu consumo diario.</div>
+      <div class="q-hint">✔️ Puedes marcar varias opciones a la vez.</div>
+      <div class="opts" id="opts-q3">
+        <div class="opt" onclick="marcar(this,'🌾 Avena, arroz integral, lentejas, frijoles')">
+          <div class="cuadro">✓</div><span class="emoji">🌾</span> Avena, arroz integral, lentejas, frijoles
+        </div>
+        <div class="opt" onclick="marcar(this,'🍗 Pollo, papas, garbanzos, pescado')">
+          <div class="cuadro">✓</div><span class="emoji">🍗</span> Pollo, papas, garbanzos, pescado
+        </div>
+        <div class="opt" onclick="marcar(this,'🥦 Espinacas, brócoli, acelgas, palta')">
+          <div class="cuadro">✓</div><span class="emoji">🥦</span> Espinacas, brócoli, acelgas, palta
+        </div>
+        <div class="opt" onclick="marcar(this,'🥛 Huevos, leche, queso, yogurt')">
+          <div class="cuadro">✓</div><span class="emoji">🥛</span> Huevos, leche, queso, yogurt
+        </div>
+        <div class="opt" onclick="marcar(this,'🍊 Fresa, limón, mandarina, naranja')">
+          <div class="cuadro">✓</div><span class="emoji">🍊</span> Fresa, limón, mandarina, naranja
+        </div>
+        <div class="opt" onclick="marcar(this,'🥜 Almendras, nueces, semillas de girasol')">
+          <div class="cuadro">✓</div><span class="emoji">🥜</span> Almendras, nueces, semillas de girasol
+        </div>
+      </div>
+      <div class="dato">
+        <span class="dato-icono">🧪</span>
+        <span class="dato-texto"><b>Dato clave:</b> El brócoli tiene vitamina B9 que desarrolla el cerebro. Las nueces tienen vitamina E que protege las neuronas del daño.</span>
+      </div>
+    </div>
+    <div class="alerta" id="al-q3">⚠️ Marca al menos una opción para continuar.</div>
+    <div class="nav">
+      <button class="btn-atras" onclick="ir('p-q3','p-q2')">← Atrás</button>
+      <button class="btn-siguiente" onclick="valCheck()">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ══════ P4 ══════ -->
+  <div class="screen" id="p-q4">
+    <div class="card azul">
+      <div class="q-num">PREGUNTA 4 DE 7</div>
+      <div class="q-texto">¿Con qué frecuencia te sientes cansado o con dificultad para concentrarte en clase?</div>
+      <div class="opts">
+        <div class="opt" onclick="elegir(this,'q4','Nunca')">
+          <div class="circulo">✓</div><span class="emoji">💪</span> Nunca — siempre estoy enfocado
+        </div>
+        <div class="opt" onclick="elegir(this,'q4','A veces')">
+          <div class="circulo">✓</div><span class="emoji">😐</span> A veces
+        </div>
+        <div class="opt" onclick="elegir(this,'q4','Frecuentemente')">
+          <div class="circulo">✓</div><span class="emoji">😴</span> Frecuentemente
+        </div>
+        <div class="opt" onclick="elegir(this,'q4','Siempre')">
+          <div class="circulo">✓</div><span class="emoji">😵</span> Siempre — me cuesta concentrarme
+        </div>
+      </div>
+      <div class="dato">
+        <span class="dato-icono">⚡</span>
+        <span class="dato-texto"><b>¿Lo sabías?</b> La falta de vitamina B12 y B1 es causa muy común de cansancio mental y dificultad para concentrarse en adolescentes.</span>
+      </div>
+    </div>
+    <div class="alerta" id="al-q4">⚠️ Selecciona una opción para continuar.</div>
+    <div class="nav">
+      <button class="btn-atras" onclick="ir('p-q4','p-q3')">← Atrás</button>
+      <button class="btn-siguiente" onclick="valUno('q4','al-q4','p-q4','p-q5',71)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ══════ P5 ══════ -->
+  <div class="screen" id="p-q5">
+    <div class="card morado">
+      <div class="q-num">PREGUNTA 5 DE 7</div>
+      <div class="q-texto">¿Te resulta difícil recordar lo aprendido en clase?</div>
+      <div class="opts">
+        <div class="opt" onclick="elegir(this,'q5','Nunca')">
+          <div class="circulo">✓</div><span class="emoji">🧠</span> Nunca — recuerdo todo bien
+        </div>
+        <div class="opt" onclick="elegir(this,'q5','A veces')">
+          <div class="circulo">✓</div><span class="emoji">🤔</span> A veces
+        </div>
+        <div class="opt" onclick="elegir(this,'q5','Frecuentemente')">
+          <div class="circulo">✓</div><span class="emoji">😕</span> Frecuentemente
+        </div>
+        <div class="opt" onclick="elegir(this,'q5','Siempre')">
+          <div class="circulo">✓</div><span class="emoji">😖</span> Siempre — se me olvida casi todo
+        </div>
+      </div>
+      <div class="dato">
+        <span class="dato-icono">🔬</span>
+        <span class="dato-texto"><b>Dato curioso:</b> La vitamina B12 y el ácido fólico (B9) son fundamentales para la memoria. Su deficiencia puede reducir hasta 30% la capacidad de recordar cosas nuevas.</span>
+      </div>
+    </div>
+    <div class="alerta" id="al-q5">⚠️ Selecciona una opción para continuar.</div>
+    <div class="nav">
+      <button class="btn-atras" onclick="ir('p-q5','p-q4')">← Atrás</button>
+      <button class="btn-siguiente" onclick="valUno('q5','al-q5','p-q5','p-q6',85)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ══════ P6 ══════ -->
+  <div class="screen" id="p-q6">
+    <div class="card">
+      <div class="q-num">PREGUNTA 6 DE 7</div>
+      <div class="q-texto">¿Consumes vitaminas o suplementos (cápsulas, pastillas, efervescentes)?</div>
+      <div class="opts">
+        <div class="opt" onclick="elegir(this,'q6','Sí, actualmente')">
+          <div class="circulo">✓</div><span class="emoji">💊</span> Sí, actualmente
+        </div>
+        <div class="opt" onclick="elegir(this,'q6','En algún momento consumí')">
+          <div class="circulo">✓</div><span class="emoji">🕐</span> En algún momento consumí
+        </div>
+        <div class="opt" onclick="elegir(this,'q6','Actualmente no')">
+          <div class="circulo">✓</div><span class="emoji">❌</span> Actualmente no
+        </div>
+        <div class="opt" onclick="elegir(this,'q6','Nunca')">
+          <div class="circulo">✓</div><span class="emoji">🚫</span> Nunca he consumido
+        </div>
+        <div class="opt" onclick="elegir(this,'q6','No recuerdo')">
+          <div class="circulo">✓</div><span class="emoji">🤷</span> No recuerdo
+        </div>
+      </div>
+    </div>
+    <div class="alerta" id="al-q6">⚠️ Selecciona una opción para continuar.</div>
+    <div class="nav">
+      <button class="btn-atras" onclick="ir('p-q6','p-q5')">← Atrás</button>
+      <button class="btn-siguiente" onclick="valUno('q6','al-q6','p-q6','p-q7',100)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ══════ P7 — ÚLTIMA ══════ -->
+  <div class="screen" id="p-q7">
+    <div class="card verde">
+      <div class="q-num">PREGUNTA 7 DE 7 — ¡ÚLTIMA!</div>
+      <div class="q-texto">¿Cómo consideras tu rendimiento académico actual?</div>
+      <div class="opts">
+        <div class="opt" onclick="elegir(this,'q7','Muy bueno')">
+          <div class="circulo">✓</div><span class="emoji">🌟</span> Muy bueno — excelentes notas
+        </div>
+        <div class="opt" onclick="elegir(this,'q7','Bueno')">
+          <div class="circulo">✓</div><span class="emoji">😊</span> Bueno — notas aceptables
+        </div>
+        <div class="opt" onclick="elegir(this,'q7','Regular')">
+          <div class="circulo">✓</div><span class="emoji">😐</span> Regular — puedo mejorar
+        </div>
+        <div class="opt" onclick="elegir(this,'q7','Bajo')">
+          <div class="circulo">✓</div><span class="emoji">📉</span> Bajo — tengo dificultades
+        </div>
+      </div>
+      <div class="dato">
+        <span class="dato-icono">🎯</span>
+        <span class="dato-texto"><b>Recuerda:</b> No hay respuestas correctas ni incorrectas. Tu honestidad es lo que más nos ayuda. ¡Gracias!</span>
+      </div>
+    </div>
+    <div class="alerta" id="al-q7">⚠️ Selecciona una opción para enviar.</div>
+    <div class="nav">
+      <button class="btn-atras" onclick="ir('p-q7','p-q6')">← Atrás</button>
+      <button class="btn-enviar" onclick="enviar()">Enviar respuestas ✓</button>
+    </div>
+  </div>
+
+  <!-- ══════ RESULTADOS ══════ -->
+  <div class="screen" id="p-res">
+    <div class="res-hero">
+      <span class="res-emoji">🎉</span>
+      <div class="res-titulo">¡Gracias por participar!</div>
+      <div class="res-sub">Tu aporte es clave para nuestra investigación · Eureka 2026</div>
+    </div>
+
+    <div class="res-card">
+      <div class="res-titulo-sec">📋 Tus respuestas</div>
+      <div id="res-filas"></div>
+    </div>
+
+    <div class="res-card">
+      <div class="res-titulo-sec">💡 Consejo para ti</div>
+      <div class="consejo">
+        <span class="consejo-emoji" id="con-emoji">🌱</span>
+        <span class="consejo-texto" id="con-texto"></span>
+      </div>
+    </div>
+
+    <div class="res-card">
+      <div class="res-titulo-sec">🧬 Las 7 vitaminas del estudio</div>
+      <div class="vits-grid">
+        <div class="vit-item">
+          <div class="vit-badge" style="background:#0c3466;color:#60a5fa;">B12</div>
+          <div class="vit-desc">Sistema nervioso y memoria</div>
+        </div>
+        <div class="vit-item">
+          <div class="vit-badge" style="background:#064e3b;color:#6ee7b7;">B6</div>
+          <div class="vit-desc">Ánimo y atención</div>
+        </div>
+        <div class="vit-item">
+          <div class="vit-badge" style="background:#3b0764;color:#c084fc;">B9</div>
+          <div class="vit-desc">Desarrollo cerebral</div>
+        </div>
+        <div class="vit-item">
+          <div class="vit-badge" style="background:#451a03;color:#fbbf24;">D</div>
+          <div class="vit-desc">Huesos y cerebro</div>
+        </div>
+        <div class="vit-item">
+          <div class="vit-badge" style="background:#1e1b4b;color:#a78bfa;">E</div>
+          <div class="vit-desc">Protege las neuronas</div>
+        </div>
+        <div class="vit-item">
+          <div class="vit-badge" style="background:#450a0a;color:#f87171;">C</div>
+          <div class="vit-desc">Defensas y cerebro</div>
+        </div>
+        <div class="vit-item" style="grid-column:1/-1;">
+          <div class="vit-badge" style="background:#052e16;color:#4ade80;">B1</div>
+          <div class="vit-desc">Energía cerebral (Tiamina) — convierte los carbohidratos en combustible para el cerebro</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-nuevo" onclick="reiniciar()">← Llenar de nuevo / Nueva encuesta</button>
+
+    <div class="footer">
+      I.E.P. Liceo Santo Domingo · Feria de Ciencias Eureka 2026<br>
+      Grupo 4 · 2.° B<br>
+      Daniela Vásquez · Keyla Timo · Fabrizio Ponce · Dastin Requena · María Cerda · Camila Occ
+    </div>
+  </div>
+
+</div><!-- fin wrap -->
+
+<script>
+// ── Supabase ──────────────────────────────────────────
+const SUPA_URL = 'https://jhpvkgqsmlihyqosqzsp.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpocHZrZ3FzbWxpaHlxb3NxenNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzI2NDYsImV4cCI6MjA5MjAwODY0Nn0.kLiH4dG9SAK4j0RXhSpFwQA2PZH-DLO5pRRHUuixrxs';
+const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+// ──────────────────────────────────────────────────────
+
+var R = {};
+
+function mostrar(id) {
+  var all = document.querySelectorAll('.screen');
+  for (var i = 0; i < all.length; i++) all[i].classList.remove('activa');
+  document.getElementById(id).classList.add('activa');
+  window.scrollTo(0, 0);
+}
+
+function setProg(lbl, pct) {
+  document.getElementById('prog-lbl').textContent = lbl;
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('prog-fill').style.width = pct + '%';
+}
+
+function iniciar() {
+  document.getElementById('prog').style.display = 'block';
+  setProg('Datos personales', 0);
+  mostrar('p-datos');
+}
+
+function ir(desde, hacia) {
+  mostrar(hacia);
+}
+
+function elegirGrado(g) {
+  R.grado = g;
+  document.getElementById('gb2').classList.remove('sel');
+  document.getElementById('gb5').classList.remove('sel');
+  if (g === '2do') document.getElementById('gb2').classList.add('sel');
+  else document.getElementById('gb5').classList.add('sel');
+}
+
+function elegir(el, clave, val) {
+  var grupo = el.parentElement;
+  var todos = grupo.querySelectorAll('.opt');
+  for (var i = 0; i < todos.length; i++) todos[i].classList.remove('sel');
+  el.classList.add('sel');
+  R[clave] = val;
+}
+
+function marcar(el, val) {
+  if (!R.q3) R.q3 = [];
+  if (el.classList.contains('sel-v')) {
+    el.classList.remove('sel-v');
+    var idx = R.q3.indexOf(val);
+    if (idx > -1) R.q3.splice(idx, 1);
+  } else {
+    el.classList.add('sel-v');
+    R.q3.push(val);
+  }
+}
+
+function alerta(id) {
+  var a = document.getElementById(id);
+  a.classList.add('on');
+  setTimeout(function() { a.classList.remove('on'); }, 3000);
+}
+
+function valDatos() {
+  var e = document.getElementById('edad').value;
+  if (!R.grado || !e || e < 10 || e > 19) { alerta('al-datos'); return; }
+  R.edad = e;
+  setProg('Pregunta 1 de 7', 14);
+  mostrar('p-q1');
+}
+
+function valUno(clave, alId, desde, hacia, pct) {
+  if (!R[clave]) { alerta(alId); return; }
+  var labels = {28:'Pregunta 2 de 7',42:'Pregunta 3 de 7',57:'Pregunta 4 de 7',71:'Pregunta 5 de 7',85:'Pregunta 6 de 7',100:'Pregunta 7 de 7'};
+  setProg(labels[pct] || '', pct);
+  mostrar(hacia);
+}
+
+function valCheck() {
+  if (!R.q3 || R.q3.length === 0) { alerta('al-q3'); return; }
+  setProg('Pregunta 4 de 7', 57);
+  mostrar('p-q4');
+}
+
+async function enviar() {
+  if (!R.q7) { alerta('al-q7'); return; }
+
+  // Deshabilitar botón mientras se envía
+  var btn = document.querySelector('.btn-enviar');
+  var textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Enviando... ⏳';
+  btn.style.opacity = '0.7';
+
+  try {
+    var { error } = await db.from('survey_responses').insert([{
+      grado:                 R.grado || null,
+      edad:                  R.edad ? parseInt(R.edad) : null,
+      frecuencia_consumo:    R.q1 || null,
+      motivo_bajo_consumo:   R.q2 || 'No aplica',
+      alimentos_diarios:     R.q3 && R.q3.length ? R.q3 : [],
+      cansancio_concentracion: R.q4 || null,
+      dificultad_recordar:   R.q5 || null,
+      consumo_suplementos:   R.q6 || null,
+      rendimiento_academico: R.q7 || null
+    }]);
+
+    if (error) throw error;
+
+    // ✅ Éxito: mostrar resultados
+    construirResultados();
+    document.getElementById('prog').style.display = 'none';
+    mostrar('p-res');
+
+  } catch (err) {
+    console.error('Error al guardar en Supabase:', err);
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+    btn.style.opacity = '1';
+    alert('⚠️ Hubo un error al enviar tus respuestas. Por favor intenta de nuevo.');
+  }
+}
+
+function construirResultados() {
+  var filas = [
+    ['Grado', R.grado || '—'],
+    ['Edad', R.edad ? R.edad + ' años' : '—'],
+    ['Frecuencia de consumo nutritivo', R.q1 || '—'],
+    ['Motivo de bajo consumo', R.q2 || '—'],
+    ['Alimentos de consumo diario', R.q3 && R.q3.length ? R.q3.join(' · ') : '—'],
+    ['Cansancio o dificultad en clase', R.q4 || '—'],
+    ['Dificultad para recordar', R.q5 || '—'],
+    ['Consume suplementos vitamínicos', R.q6 || '—'],
+    ['Rendimiento académico actual', R.q7 || '—']
+  ];
+  var html = '';
+  for (var i = 0; i < filas.length; i++) {
+    html += '<div class="res-fila"><span class="res-q">' + filas[i][0] + '</span><span class="res-a">' + filas[i][1] + '</span></div>';
+  }
+  document.getElementById('res-filas').innerHTML = html;
+
+  var emoji = '🌟', txt = '';
+  if (R.q1 === 'Muy poco' || R.q1 === '1 vez a la semana') {
+    emoji = '🥦';
+    txt = 'Tu dieta podría estar afectando tu rendimiento. Intenta agregar una fruta al día (naranja o plátano) y verduras como espinaca o brócoli al almuerzo. ¡Pequeños cambios hacen una gran diferencia en tu cerebro!';
+  } else if (R.q4 === 'Frecuentemente' || R.q4 === 'Siempre') {
+    emoji = '⚡';
+    txt = 'Si te cansas o te cuesta concentrarte seguido, puede ser señal de falta de vitaminas B12 o B1. Come más huevo, pescado y avena. Tu cerebro necesita ese combustible para funcionar bien en clase.';
+  } else if (R.q7 === 'Bajo' || R.q7 === 'Regular') {
+    emoji = '📈';
+    txt = 'Una alimentación rica en vitaminas puede mejorar tu concentración y memoria. Empieza con cambios pequeños: agua en vez de gaseosa, fruta de lonche y 15 minutos de sol al día para tu vitamina D.';
+  } else {
+    txt = '¡Vas muy bien! Mantener una buena alimentación es la clave para seguir rindiendo. Sigue comiendo variado, tomando agua y aprovechando el sol para tu vitamina D. ¡Tu cerebro te lo agradece!';
+  }
+  document.getElementById('con-emoji').textContent = emoji;
+  document.getElementById('con-texto').textContent = txt;
+}
+
+function reiniciar() {
+  R = {};
+  var opts = document.querySelectorAll('.opt');
+  for (var i = 0; i < opts.length; i++) opts[i].classList.remove('sel', 'sel-v');
+  document.getElementById('gb2').classList.remove('sel');
+  document.getElementById('gb5').classList.remove('sel');
+  document.getElementById('edad').value = '';
+  var alertas = document.querySelectorAll('.alerta');
+  for (var j = 0; j < alertas.length; j++) alertas[j].classList.remove('on');
+  document.getElementById('prog').style.display = 'none';
+  mostrar('p-inicio');
+}
+</script>
+</body>
+</html>

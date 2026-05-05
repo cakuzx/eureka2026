@@ -1,0 +1,11 @@
+# Variables de entorno - NUNCA subir al repositorio
+.env
+.env.local
+.env.*.local
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel
